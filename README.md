@@ -15,5 +15,5 @@ $ pack build polar-ui --buildpack gcr.io/paketo-buildpacks/nginx --builder paket
 Finally, you can run the container as follows.
 
 ```bash
-$ docker run -d --name polar-ui --env PORT=9004 --publish 9004:9004 polar-ui
+$ docker run -d --name polar-ui --publish 9004:9004 polar-ui
 ```
