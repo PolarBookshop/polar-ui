@@ -9,13 +9,17 @@ env:
 jobs:
   build:
     name: Build and Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       security-events: write
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+      - name: Build, unit tests and integration tests
+        run: |
+          chmod +x gradlew
+          ./gradlew buildAngular
       - name: Code vulnerability scanning
         uses: anchore/scan-action@v3
         id: scan
@@ -23,37 +27,32 @@ jobs:
           path: "${{ github.workspace }}"
           fail-build: false
           severity-cutoff: high
-          acs-report-enable: true
       - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         if: success() || failure()
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-      - name: Build, unit tests and integration tests
-        run: |
-          chmod +x gradlew
-          ./gradlew buildAngular
       - name: Validate Kubernetes manifests
         uses: stefanprodan/kube-tools@v1
         with:
-          kubectl: 1.23.4
-          kubeval: 0.16.1
+          kubectl: 1.28.3
+          kubeconform: 0.6.4
           command: |
-            kubeval --strict -d k8s
+            kubeconform --strict k8s
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: [ build ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
       security-events: write
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Pack CLI
-        uses: buildpacks/github-actions/setup-pack@v4.4.0
+        uses: buildpacks/github-actions/setup-pack@v5.5.1
       - name: Build SPA
         run: |
           chmod +x gradlew
@@ -62,7 +61,7 @@ jobs:
         run: |
           pack build ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} \
             --buildpack gcr.io/paketo-buildpacks/nginx \
-            --builder paketobuildpacks/builder:base \
+            --builder docker.io/paketobuildpacks/builder-jammy-base \
             -p dist
       - name: OCI image vulnerability scanning
         uses: anchore/scan-action@v3
@@ -71,14 +70,13 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
           fail-build: false
           severity-cutoff: high
-          acs-report-enable: true
       - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         if: success() || failure()
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
       - name: Log into container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
