@@ -61,7 +61,7 @@ jobs:
         run: |
           pack build ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} \
             --buildpack gcr.io/paketo-buildpacks/nginx \
-            --builder docker.io/paketobuildpacks/builder-jammy-base \
+            --builder paketobuildpacks/builder:base \
             -p dist
       - name: OCI image vulnerability scanning
         uses: anchore/scan-action@v3

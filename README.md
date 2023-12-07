@@ -15,7 +15,7 @@ Then, package it in an NGINX container using the [pack](https://buildpacks.io/do
 ```shell
 pack build polar-ui \
   --buildpack gcr.io/paketo-buildpacks/nginx \
-  --builder docker.io/paketobuildpacks/builder-jammy-base \
+  --builder paketobuildpacks/builder:base \
   -p dist
 ```
 
